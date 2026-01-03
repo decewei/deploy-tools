@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Test Label release PR - happy path
-        uses: decewei/deploy-tools/actions/label-release-pr@release
+        uses: decewei/deploy-tools/actions/label-release-pr@main
         with:
           app-id: ${{ vars.ACTION_BOT_APP_ID }}
           private-key: ${{ secrets.ACTION_BOT_PRIVATE_KEY }}
@@ -30,7 +30,7 @@ jobs:
           released-label: 'release:released'
           failed-label: 'release:failed-to-release'
       - name: Test Label release PR - failure path
-        uses: decewei/deploy-tools/actions/label-release-pr@release
+        uses: decewei/deploy-tools/actions/label-release-pr@main
         with:
           app-id: ${{ vars.ACTION_BOT_APP_ID }}
           private-key: ${{ secrets.ACTION_BOT_PRIVATE_KEY }}
@@ -55,7 +55,7 @@ jobs:
 
       - name: Bump version and tag with approval check
         id: version
-        uses: decewei/deploy-tools/actions/bump-version-and-tag-with-approval@release
+        uses: decewei/deploy-tools/actions/bump-version-and-tag-with-approval@main
         with:
           app-id: ${{ vars.ACTION_BOT_APP_ID }}
           private-key: ${{ secrets.ACTION_BOT_PRIVATE_KEY }}
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Label release PR
-        uses: decewei/deploy-tools/actions/label-release-pr@release
+        uses: decewei/deploy-tools/actions/label-release-pr@main
         with:
           app-id: ${{ vars.ACTION_BOT_APP_ID }}
           private-key: ${{ secrets.ACTION_BOT_PRIVATE_KEY }}
