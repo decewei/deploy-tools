@@ -41,6 +41,7 @@ jobs:
           failed-label: 'release:failed-to-release'
 
   version-and-tag:
+    needs: [update-pr-label-test]
     runs-on: ubuntu-latest
     outputs:
       continue: ${{ steps.version.outputs.continue }}
