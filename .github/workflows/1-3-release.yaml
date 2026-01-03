@@ -67,8 +67,7 @@ jobs:
           release-branch: 'release'
           semantic-version-pattern-major: '/!:|BREAKING CHANGE:/'
           semantic-version-pattern-minor: '/feat:/'
-          version-file-type: 'python'
-          change-path: 'src/,pyproject.toml,requirements.txt,requirements-dev.txt'
+          version-file-type: 'nodejs'
           enable-prerelease: ${{ contains(github.event.pull_request.labels.*.name, 'release:candidate') }}
           prerelease-suffix: 'rc'
 
