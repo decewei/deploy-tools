@@ -99,6 +99,3 @@ For Node.js projects, ensure `package.json` exists with a version field that can
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on contributing to this project.
 
-## License
-
-This project is part of the Climate Compass initiative.
