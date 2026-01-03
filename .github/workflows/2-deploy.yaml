@@ -22,7 +22,7 @@ jobs:
           app-id: ${{ vars.ACTION_BOT_APP_ID }}
           private-key: ${{ secrets.ACTION_BOT_PRIVATE_KEY }}
           owner: ${{ github.repository_owner }}
-          repositories: scripts
+          repositories: deploy-tools
 
       - uses: actions/checkout@v6
         with:
