@@ -1,0 +1,27 @@
+name: Rollback
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        type: string
+        description: 'Commit SHA'
+        required: False
+  workflow_dispatch:
+    inputs:
+      ref:
+        type: string
+        description: 'Commit SHA'
+        required: False
+
+jobs:
+  rollback:
+    uses: ./.github/workflows/2-deploy.yaml
+    secrets: inherit
+    with:
+      stage: prod
+      ref: ${{ inputs.ref || '' }}

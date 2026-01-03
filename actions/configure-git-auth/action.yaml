@@ -1,0 +1,105 @@
+name: 'Configure Git Authentication'
+description: 'Configure git with token auth and optional bot user identity. Supports three modes: (1) token+app-slug, (2) token only, (3) app-id+private-key'
+
+inputs:
+  token:
+    required: false
+    description: 'GitHub token (app token or regular GITHUB_TOKEN). Required unless app-id is provided.'
+  app-slug:
+    required: false
+    description: 'GitHub App slug (for bot user identification). If provided with token, sets up bot identity.'
+  app-id:
+    required: false
+    description: 'GitHub App ID. If provided with private-key, generates token and app-slug automatically.'
+  private-key:
+    required: false
+    description: 'GitHub App private key. Required if app-id is provided.'
+  owner:
+    required: false
+    description: 'Repository owner for token scope (used when generating app tokens)'
+  repositories:
+    required: false
+    description: 'Comma-separated list of repositories to grant token access to (used when generating app tokens)'
+
+outputs:
+  token:
+    description: 'Generated or provided GitHub token'
+    value: ${{ steps.outputs.outputs.token }}
+  app-slug:
+    description: 'GitHub App slug (if available)'
+    value: ${{ steps.outputs.outputs.app-slug }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        TOKEN="${{ inputs.token }}"
+        APP_ID="${{ inputs.app-id }}"
+        PRIVATE_KEY="${{ inputs.private-key }}"
+
+        if [ -z "${TOKEN}" ] && ([ -z "${APP_ID}" ] || [ -z "${PRIVATE_KEY}" ]); then
+          echo "Error: Either token or (app-id + private-key) must be provided"
+          exit 1
+        fi
+
+    - name: Generate GitHub App token
+      if: ${{ inputs.app-id && inputs.private-key }}
+      id: app
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+        owner: ${{ inputs.owner }}
+        repositories: ${{ inputs.repositories }}
+
+    - name: Configure git URL rewriting for token auth
+      shell: bash
+      run: |
+        TOKEN="${{ inputs.token || steps.app.outputs.token }}"
+        GIT_URL="https://x-access-token:${TOKEN}@github"
+        
+        echo "Configuring git URL rewriting with token auth (global and local)"
+        git config --global url."${GIT_URL}".insteadOf https://github
+        
+        # Set local config if in a git repository, otherwise skip gracefully
+        if git config --local url."${GIT_URL}".insteadOf https://github 2>/dev/null; then
+          echo "Local git config set successfully"
+        else
+          echo "Note: Local git config not set (not in a git repository)"
+        fi
+
+    - name: Configure bot user identity
+      if: ${{ inputs.app-slug || steps.app.outputs.app-slug }}
+      shell: bash
+      run: |
+        APP_SLUG="${{ inputs.app-slug || steps.app.outputs.app-slug }}"
+        TOKEN="${{ inputs.token || steps.app.outputs.token }}"
+        
+        echo "Configuring bot user identity for ${APP_SLUG}[bot] (global and local)"
+        BOT_NAME="${APP_SLUG}[bot]"
+        bot_id=$(gh api "/users/${BOT_NAME}" --jq .id)
+        BOT_EMAIL="${bot_id}+${BOT_NAME}@users.noreply.github.com"
+        
+        # Set global config
+        git config --global user.name "${BOT_NAME}"
+        git config --global user.email "${BOT_EMAIL}"
+        
+        # Set local config if in a git repository, otherwise skip gracefully
+        if git rev-parse --git-dir >/dev/null 2>&1; then
+          git config --local user.name "${BOT_NAME}"
+          git config --local user.email "${BOT_EMAIL}"
+          echo "Local git user config set successfully"
+        else
+          echo "Note: Local git user config not set (not in a git repository)"
+        fi
+      env:
+        GH_TOKEN: ${{ inputs.token || steps.app.outputs.token }}
+
+    - name: Set action outputs
+      id: outputs
+      shell: bash
+      run: |
+        echo "token=${{ inputs.token || steps.app.outputs.token }}" >> "$GITHUB_OUTPUT"
+        echo "app-slug=${{ inputs.app-slug || steps.app.outputs.app-slug }}" >> "$GITHUB_OUTPUT"

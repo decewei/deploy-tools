@@ -1,0 +1,89 @@
+name: 'Create Release PR'
+description: 'Create or update a release PR from source to target branch'
+
+inputs:
+  token:
+    required: false
+    description: 'GitHub token for PR operations (alternative to app-id + private-key)'
+  app-id:
+    required: false
+    description: 'GitHub App ID (alternative to token)'
+  private-key:
+    required: false
+    description: 'GitHub App private key (required if app-id is provided)'
+  source-branch:
+    required: false
+    default: 'main'
+    description: 'Source branch for release PR'
+  target-branch:
+    required: false
+    default: 'release'
+    description: 'Target branch for release PR'
+  review-team:
+    required: false
+    default: ''
+    description: 'Team or user to request review from'
+  label:
+    required: false
+    default: 'release:required-approval'
+    description: 'Labels to apply to the release PR. Separate multiple labels with commas'
+  close-label:
+    required: false
+    default: 'release:cancelled'
+    description: 'Labels to apply to closed PRs. Separate multiple labels with commas'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure git authentication
+      id: auth
+      uses: decewei/deploy-tools/actions/configure-git-auth@release
+      with:
+        token: ${{ inputs.token }}
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+
+    - name: Create or update release PR
+      shell: bash
+      run: |
+        SOURCE_BRANCH="${{ inputs.source-branch }}"
+        TARGET_BRANCH="${{ inputs.target-branch }}"
+        REVIEW_TEAM="${{ inputs.review-team }}"
+
+        SHORT_SHA=$(git rev-parse --short "origin/${SOURCE_BRANCH}")
+        PR_TITLE="Release ${SOURCE_BRANCH}:${SHORT_SHA} into ${TARGET_BRANCH}"
+
+        # Check if PR already exists
+        EXISTING_PR=$(gh pr list \
+          --base "${TARGET_BRANCH}" \
+          --head "${SOURCE_BRANCH}" \
+          --json number --jq '.[0].number // empty' 2>/dev/null || echo "")
+
+        if [ -n "${EXISTING_PR}" ]; then
+          echo "Closing existing PR #${EXISTING_PR}"
+          if [ -n "${{ inputs.close-label }}" ]; then
+            echo "Adding close label '${{ inputs.close-label }}' to PR #${EXISTING_PR}"
+            gh pr edit "${EXISTING_PR}" --add-label "${{ inputs.close-label }}"
+          fi
+          gh pr close "${EXISTING_PR}" \
+            --comment "Closing this PR. A new PR will be opened."
+        fi
+
+        echo "Creating new release PR from ${SOURCE_BRANCH} to ${TARGET_BRANCH}"
+        PR_CREATE_ARGS=(
+          --title "${PR_TITLE}"
+          --fill
+          --base "${TARGET_BRANCH}"
+          --label "${{ inputs.label }}"
+          --head "${SOURCE_BRANCH}"
+        )
+        
+        if [ -n "${REVIEW_TEAM}" ]; then
+          PR_CREATE_ARGS+=(--reviewer "${REVIEW_TEAM}")
+        fi
+        
+        gh pr create "${PR_CREATE_ARGS[@]}"
+
+        echo "Release PR created successfully"
+      env:
+        GH_TOKEN: ${{ steps.auth.outputs.token }}

@@ -1,0 +1,6 @@
+{
+  "name": "PR Build Check",
+  "description": "Build and test pull requests with dependabot auto-merge support",
+  "category": "Continuous integration",
+  "fileExtension": "yaml"
+}

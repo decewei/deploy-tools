@@ -1,0 +1,79 @@
+name: 'Check Release Approval'
+description: 'Validate that a release PR is approved by all requested reviewers'
+
+inputs:
+  token:
+    required: true
+    description: 'GitHub token for API access'
+  repo:
+    required: false
+    description: 'Repository in owner/name format'
+  pr-number:
+    required: false
+    description: 'Pull request number to check approval for'
+  require-approvals:
+    required: false
+    default: 'true'
+    description: 'Whether at least one approval is required'
+  require-all-reviews:
+    required: false
+    default: 'true'
+    description: 'Whether all requested reviewers must have approved'
+
+outputs:
+  continue:
+    description: 'Whether release should proceed (true|false)'
+    value: ${{ steps.check.outputs.continue }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check PR approval status
+      id: check
+      shell: bash
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "Event is workflow_dispatch, proceeding"
+          echo "continue=true" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        if [ "${{ github.event_name }}" != "pull_request" ] || [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+          echo "Not a pull_request event or PR already merged, proceeding"
+          echo "continue=true" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        PR_NUMBER="${{ inputs.pr-number || github.event.pull_request.number }}"
+        REPO="${{ inputs.repo || github.repository }}"
+        echo "Checking approval status for PR #${PR_NUMBER} in repo ${REPO}"
+
+        # Get all requested reviewers (users and teams)
+        REQUESTED_REVIEWERS=$(gh api "/repos/${REPO}/pulls/${PR_NUMBER}" --jq '[(.requested_reviewers // [])[].login, (.requested_teams // [])[].slug] | length')
+        echo "Total requested reviewers: $REQUESTED_REVIEWERS"
+
+        # Get unique reviewers who approved
+        APPROVED_REVIEWERS=$(gh api "/repos/${REPO}/pulls/${PR_NUMBER}/reviews" --jq '[.[] | select(.state == "APPROVED") | .user.login] | unique | length')
+        echo "Total approved reviewers: $APPROVED_REVIEWERS"
+
+        REQUIRE_APPROVALS="${{ inputs.require-approvals }}"
+        REQUIRE_ALL="${{ inputs.require-all-reviews }}"
+
+        # Check if approvals are required
+        if [ "${REQUIRE_APPROVALS}" = "true" ] && [ "${APPROVED_REVIEWERS}" -eq 0 ]; then
+          echo "PR has no approvals. Skipping."
+          echo "continue=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        # Check if all reviewers must approve
+        if [ "${REQUIRE_ALL}" = "true" ] && [ "${REQUESTED_REVIEWERS}" -gt 0 ]; then
+          echo "PR has pending review requests (${REQUESTED_REVIEWERS} requested, ${APPROVED_REVIEWERS} approved). Skipping."
+          echo "continue=false" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        echo "PR approval check passed. Proceeding."
+        echo "continue=true" >> $GITHUB_OUTPUT
+      env:
+        GH_TOKEN: ${{ inputs.token }}

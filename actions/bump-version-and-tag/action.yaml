@@ -1,0 +1,201 @@
+name: 'Bump Version and Tag'
+description: 'Calculate semantic version, bump version in project files, and create git tag. For Python projects, requires setuptools-scm for automatic version management from git tags.'
+
+inputs:
+  token:
+    required: true
+    description: 'GitHub token for git operations'
+  tag-prefix:
+    required: false
+    default: 'v'
+    description: 'Prefix for git tags (e.g., v, release-)'
+  main-branch:
+    required: false
+    default: 'main'
+    description: 'Main development branch name'
+  release-branch:
+    required: false
+    default: 'release'
+    description: 'Release branch name. To skip release branch operations, set to empty.'
+  semantic-version-pattern-major:
+    required: false
+    default: '/!:|BREAKING CHANGE:/'
+    description: 'Regex pattern for major version bumps'
+  semantic-version-pattern-minor:
+    required: false
+    default: '/feat:/'
+    description: 'Regex pattern for minor version bumps'
+  version-file-type:
+    required: false
+    default: 'auto'
+    description: 'Version file type: auto|python|nodejs (auto detects from pyproject.toml or package.json)'
+  change-path:
+    required: false
+    default: ''
+    description: 'Comma-separated paths to consider for semantic versioning (e.g., "src/,pyproject.toml"). Empty means all paths.'
+  enable-prerelease:
+    required: false
+    default: false
+    description: 'Enable prerelease versioning (e.g., 1.2.3-rc1)'
+  prerelease-suffix:
+    required: false
+    default: 'rc'
+    description: 'Prerelease suffix to use (default: rc)'
+  enable-pre-v1-mode:
+    required: false
+    default: false
+    description: 'Enable pre-v1.0.0 version mode (for PaulHatch/semantic-version enable_prerelease_mode)'
+  debug:
+    required: false
+    default: 'false'
+    description: 'Enable debug logging to show git configuration'
+
+outputs:
+  tag:
+    description: 'Git tag that was created'
+    value: ${{ steps.create-tag.outputs.tag }}
+  version:
+    description: 'Version number that was calculated'
+    value: ${{ steps.versioning.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Debug git configuration
+      if: ${{ inputs.debug == 'true' }}
+      shell: bash
+      run: |
+        echo "🔍 Git Configuration Debug Info:"
+        echo "  Remote URL: $(git config --get remote.origin.url || echo 'Not set')"
+        echo "  User Name: $(git config --get user.name || echo 'Not set')"
+        echo "  User Email: $(git config --get user.email || echo 'Not set')"
+        echo "  URLs: $(git config --global --get-regexp 'url.*' || echo 'Not set')"
+    - name: Calculate semantic version
+      id: versioning
+      uses: PaulHatch/semantic-version@v5.4.0
+      with:
+        tag_prefix: ${{ inputs.tag-prefix }}
+        major_pattern: ${{ inputs.semantic-version-pattern-major }}
+        minor_pattern: ${{ inputs.semantic-version-pattern-minor }}
+        version_format: ${{ inputs.enable-prerelease == 'true' && format('${{major}}.${{minor}}.${{patch}}-{0}${{increment}}', inputs.prerelease-suffix) || '${major}.${minor}.${patch}' }}
+        bump_each_commit: false
+        search_commit_body: false
+        user_format_type: csv
+        change_path: ${{ inputs.change-path }}
+        enable_prerelease_mode: ${{ inputs.enable-pre-v1-mode }}
+
+    - name: Detect version file type
+      id: detect
+      shell: bash
+      run: |
+        FILE_TYPE="${{ inputs.version-file-type }}"
+
+        if [ "${FILE_TYPE}" = "auto" ]; then
+          if [ -f "pyproject.toml" ]; then
+            FILE_TYPE="python"
+          elif [ -f "package.json" ]; then
+            FILE_TYPE="nodejs"
+          else
+            echo "Error: Could not auto-detect project type (no pyproject.toml or package.json found)"
+            exit 1
+          fi
+        fi
+
+        echo "file-type=${FILE_TYPE}" >> $GITHUB_OUTPUT
+
+    - name: Validate setuptools-scm for Python projects
+      if: ${{ steps.detect.outputs.file-type == 'python' }}
+      shell: bash
+      run: |
+        echo "Validating setuptools-scm configuration..."
+        
+        # Check for setuptools-scm using grep
+        if ! grep -q "setuptools-scm" pyproject.toml; then
+          echo "❌ ERROR: setuptools-scm not found in pyproject.toml"
+          echo "   Python projects must use setuptools-scm for version management."
+          echo "   See actions/bump-version-and-tag/README.md for setup instructions."
+          exit 1
+        fi
+        
+        # Check for dynamic version (flexible pattern to handle various formatting)
+        if ! grep -E 'dynamic\s*=.*version' pyproject.toml > /dev/null; then
+          echo "❌ ERROR: Version must be listed in 'dynamic' field"
+          echo "   See actions/bump-version-and-tag/README.md for setup instructions."
+          exit 1
+        fi
+        
+        echo "✓ Project is properly configured with setuptools-scm"
+        echo "  Expected version to tag: ${{ steps.versioning.outputs.version }}"
+        echo "  Note: Version is derived from git tags, no file changes needed"
+
+    - name: Bump Node.js version
+      if: ${{ steps.detect.outputs.file-type == 'nodejs' }}
+      shell: bash
+      run: |
+        VERSION="${{ steps.versioning.outputs.version }}"
+        echo "Bumping Node.js version to ${VERSION} in package.json"
+        npm version $VERSION --no-git-tag-version
+
+    - name: Commit version bump to main branch
+      if: ${{ steps.detect.outputs.file-type == 'nodejs' }}
+      shell: bash
+      run: |
+        HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+        VERSION="${{ steps.versioning.outputs.version }}"
+
+        git fetch origin ${{ inputs.main-branch }}:${{ inputs.main-branch }}
+        MAIN_HEAD=$(git rev-parse ${{ inputs.main-branch }})
+
+        echo "Head SHA: ${HEAD_SHA}"
+        echo "Main head SHA: ${MAIN_HEAD}"
+
+        if [ "${HEAD_SHA}" = "${MAIN_HEAD}" ]; then
+          echo "Head matches main head. Proceeding with version bump."
+          git checkout ${HEAD_SHA}
+          git add .
+          git commit -m "chore(release): bump version to ${VERSION} [skip ci]"
+          git push origin HEAD:${{ inputs.main-branch }} --force-with-lease=${{ inputs.main-branch }}:${MAIN_HEAD}
+          echo "Version bump committed and pushed to ${{ inputs.main-branch }}"
+        else
+          echo "Error: Head does not match main head. Cannot proceed with version bump."
+          exit 1
+        fi
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+
+    - name: Rebase release branch
+      if: ${{ inputs.release-branch != '' }}
+      shell: bash
+      run: |
+        git fetch origin ${{ inputs.main-branch }}:${{ inputs.main-branch }}
+        git fetch origin ${{ inputs.release-branch }}:${{ inputs.release-branch }}
+
+        MAIN_HEAD=$(git rev-parse ${{ inputs.main-branch }})
+        RELEASE_HEAD=$(git rev-parse ${{ inputs.release-branch }})
+
+        if [ "${MAIN_HEAD}" != "${RELEASE_HEAD}" ]; then
+          echo "Rebasing ${{ inputs.release-branch }} onto ${{ inputs.main-branch }}"
+          git checkout ${{ inputs.release-branch }}
+          git rebase ${{ inputs.main-branch }}
+          git push origin ${{ inputs.release-branch }} --force-with-lease=${{ inputs.release-branch }}:${RELEASE_HEAD}
+          echo "Release branch rebased successfully"
+        else
+          echo "Release branch is already up to date with main"
+        fi
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+
+    - name: Create and push git tag
+      id: create-tag
+      shell: bash
+      run: |
+        VERSION="${{ steps.versioning.outputs.version }}"
+        NEW_TAG="${{ inputs.tag-prefix }}${VERSION}"
+        
+        echo "Creating tag: ${NEW_TAG}"
+        git tag ${NEW_TAG}
+        git push origin ${NEW_TAG}
+        
+        echo "tag=${NEW_TAG}" >> $GITHUB_OUTPUT
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}

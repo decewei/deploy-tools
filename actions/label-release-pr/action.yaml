@@ -1,0 +1,64 @@
+name: 'Label Release PR'
+description: 'Add a label to a pull request based on deploy result (with bot identity)'
+
+inputs:
+  token:
+    required: false
+    description: 'GitHub token for PR operations (alternative to app-id + private-key)'
+  app-id:
+    required: false
+    description: 'GitHub App ID (alternative to token)'
+  private-key:
+    required: false
+    description: 'GitHub App private key (required if app-id is provided)'
+  pr-number:
+    required: false
+    description: 'Pull request number to label (defaults to github.event.pull_request.number)'
+  repo:
+    required: false
+    description: 'Repository in owner/name format (defaults to github.repository)'
+  deploy-result:
+    required: true
+    description: 'Result of deploy job: success|failure'
+  released-label:
+    required: false
+    default: 'release:released'
+    description: 'Label to apply on successful release'
+  failed-label:
+    required: false
+    default: 'release:failed-to-release'
+    description: 'Label to apply on failed release'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure git authentication
+      id: auth
+      uses: decewei/deploy-tools/actions/configure-git-auth@release
+      with:
+        token: ${{ inputs.token }}
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+
+    - name: Label PR based on deploy result
+      shell: bash
+      run: |
+        PR_NUMBER="${{ inputs.pr-number || github.event.pull_request.number }}"
+        REPO="${{ inputs.repo || github.repository }}"
+        DEPLOY_RESULT="${{ inputs.deploy-result }}"
+
+        if [ -z "${PR_NUMBER}" ]; then
+          echo "No PR number provided and not in a pull_request event. Skipping."
+          exit 0
+        fi
+
+        if [ "${DEPLOY_RESULT}" = "success" ]; then
+          LABEL="${{ inputs.released-label }}"
+        else
+          LABEL="${{ inputs.failed-label }}"
+        fi
+
+        echo "Adding label '${LABEL}' to PR #${PR_NUMBER} in ${REPO}"
+        gh pr edit "${PR_NUMBER}" --add-label "${LABEL}" --repo "${REPO}"
+      env:
+        GH_TOKEN: ${{ steps.auth.outputs.token }}

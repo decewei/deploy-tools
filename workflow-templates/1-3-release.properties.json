@@ -1,0 +1,6 @@
+{
+  "name": "Release Workflow",
+  "description": "Tag release, deploy to production, and update PR labels",
+  "category": "Deployment",
+  "fileExtension": "yaml"
+}

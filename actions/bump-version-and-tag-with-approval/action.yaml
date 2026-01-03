@@ -1,0 +1,116 @@
+name: 'Bump version and tag with approval check'
+description: 'Prepare a release by checking approval and bumping version/tag (runs before deployment). For Python projects, requires setuptools-scm for automatic version management.'
+
+inputs:
+  token:
+    required: false
+    description: 'GitHub token for git operations (alternative to app-id + private-key)'
+  app-id:
+    required: false
+    description: 'GitHub App ID (alternative to token)'
+  private-key:
+    required: false
+    description: 'GitHub App private key (required if app-id is provided)'
+  pr-number:
+    required: false
+    description: 'Pull request number for approval checks (optional)'
+  repo:
+    required: false
+    description: 'Repository in owner/name format (optional)'
+  require-approvals:
+    required: false
+    default: 'true'
+    description: 'Whether at least one approval is required'
+  require-all-reviews:
+    required: false
+    default: 'true'
+    description: 'Whether all requested reviewers must have approved'
+  tag-prefix:
+    required: false
+    default: 'v'
+    description: 'Prefix for git tags (e.g., v, release-)'
+  main-branch:
+    required: false
+    default: 'main'
+    description: 'Main development branch name'
+  release-branch:
+    required: false
+    default: 'release'
+    description: 'Release branch name. To skip release branch operations, set to empty.'
+  semantic-version-pattern-major:
+    required: false
+    default: '/!:|BREAKING CHANGE:/'
+    description: 'Regex pattern for major version bumps'
+  semantic-version-pattern-minor:
+    required: false
+    default: '/feat:/'
+    description: 'Regex pattern for minor version bumps'
+  version-file-type:
+    required: false
+    default: 'auto'
+    description: 'Version file type: auto|python|nodejs (auto detects from pyproject.toml or package.json)'
+  change-path:
+    required: false
+    default: ''
+    description: 'Comma-separated paths to consider for semantic versioning (e.g., "src/,pyproject.toml"). Empty means all paths.'
+  enable-prerelease:
+    required: false
+    default: false
+    description: 'Enable prerelease versioning (e.g., 1.2.3-rc1)'
+  prerelease-suffix:
+    required: false
+    default: 'rc'
+    description: 'Prerelease suffix to use (default: rc)'
+  enable-pre-v1-mode:
+    required: false
+    default: false
+    description: 'Enable pre-v1.0.0 version mode (for PaulHatch/semantic-version enable_prerelease_mode)'
+
+outputs:
+  continue:
+    description: 'Whether release should proceed (approval check result)'
+    value: ${{ steps.check-approval.outputs.continue }}
+  tag:
+    description: 'Git tag that was created'
+    value: ${{ steps.bump.outputs.tag }}
+  version:
+    description: 'Bumped version number'
+    value: ${{ steps.bump.outputs.version }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure git authentication
+      id: auth
+      uses: decewei/deploy-tools/actions/configure-git-auth@release
+      with:
+        token: ${{ inputs.token }}
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+
+    - name: Check release approval
+      id: check-approval
+      uses: decewei/deploy-tools/actions/check-release-approval@release
+      with:
+        token: ${{ steps.auth.outputs.token }}
+        pr-number: ${{ inputs.pr-number }}
+        repo: ${{ inputs.repo }}
+        require-approvals: ${{ inputs.require-approvals }}
+        require-all-reviews: ${{ inputs.require-all-reviews }}
+
+    - name: Bump version and tag
+      id: bump
+      if: ${{ steps.check-approval.outputs.continue == 'true' }}
+      uses: decewei/deploy-tools/actions/bump-version-and-tag@release
+      with:
+        token: ${{ steps.auth.outputs.token }}
+        tag-prefix: ${{ inputs.tag-prefix }}
+        main-branch: ${{ inputs.main-branch }}
+        release-branch: ${{ inputs.release-branch }}
+        semantic-version-pattern-major: ${{ inputs.semantic-version-pattern-major }}
+        semantic-version-pattern-minor: ${{ inputs.semantic-version-pattern-minor }}
+        version-file-type: ${{ inputs.version-file-type }}
+        change-path: ${{ inputs.change-path }}
+        enable-prerelease: ${{ inputs.enable-prerelease }}
+        prerelease-suffix: ${{ inputs.prerelease-suffix }}
+        enable-pre-v1-mode: ${{ inputs.enable-pre-v1-mode }}

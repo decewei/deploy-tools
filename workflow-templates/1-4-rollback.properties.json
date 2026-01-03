@@ -1,0 +1,6 @@
+{
+  "name": "Rollback Production Deployment",
+  "description": "Manually rollback production to a previous commit (webapp only)",
+  "category": "Deployment",
+  "fileExtension": "yaml"
+}

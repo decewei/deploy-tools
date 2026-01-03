@@ -1,0 +1,6 @@
+{
+  "name": "Staging Deployment with Release PR",
+  "description": "Deploy to staging and create release pull request",
+  "category": "Deployment",
+  "fileExtension": "yaml"
+}

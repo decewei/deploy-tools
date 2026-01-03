@@ -1,0 +1,54 @@
+name: 'Dependabot Auto-Merge'
+description: 'Auto-approve and auto-merge dependabot PRs'
+
+inputs:
+  token:
+    required: true
+    description: 'GitHub token for git operations (or use app-id + private-key)'
+  app-id:
+    required: false
+    description: 'GitHub App ID (optional)'
+  private-key:
+    required: false
+    description: 'GitHub App private key (optional)'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check if dependabot PR
+      shell: bash
+      run: |
+        if [[ "${{ github.head_ref || github.ref_name }}" == *"dependabot/"* ]]; then
+          echo "Detected dependabot PR, proceeding with auto-merge"
+        else
+          echo "Skipping: This is not a dependabot PR"
+        fi
+
+    - name: Configure git authentication
+      id: auth
+      if: ${{ contains(github.head_ref || github.ref_name, 'dependabot/') }}
+      uses: decewei/deploy-tools/actions/configure-git-auth@release
+      with:
+        token: ${{ inputs.token }}
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+
+    - name: Approve dependabot PR
+      if: ${{ contains(github.head_ref || github.ref_name, 'dependabot/') }}
+      shell: bash
+      run: |
+        PR_URL="${{ github.event.pull_request.html_url }}"
+        echo "Approving PR: ${PR_URL}"
+        gh pr review --approve "${PR_URL}"
+      env:
+        GH_TOKEN: ${{ steps.auth.outputs.token }}
+
+    - name: Enable auto-merge for dependabot PR
+      if: ${{ contains(github.head_ref || github.ref_name, 'dependabot/') }}
+      shell: bash
+      run: |
+        PR_URL="${{ github.event.pull_request.html_url }}"
+        echo "Enabling auto-merge for PR: ${PR_URL}"
+        gh pr merge --auto --squash "${PR_URL}"
+      env:
+        GH_TOKEN: ${{ steps.auth.outputs.token }}

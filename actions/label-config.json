@@ -1,0 +1,29 @@
+{
+  "labels": [
+    {
+      "name": "release:cancelled",
+      "description": "Release is cancelled",
+      "color": "725104"
+    },
+    {
+      "name": "release:candidate",
+      "description": "Mark it a release candidate",
+      "color": "5319e7"
+    },
+    {
+      "name": "release:failed-to-release",
+      "description": "Failed to release",
+      "color": "C61D19"
+    },
+    {
+      "name": "release:released",
+      "description": "Successfully release",
+      "color": "31D16C"
+    },
+    {
+      "name": "release:required-approval",
+      "description": "Release approval steps",
+      "color": "E4B6B9"
+    }
+  ]
+}
