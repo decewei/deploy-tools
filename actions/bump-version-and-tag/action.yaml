@@ -136,6 +136,15 @@ runs:
         echo "Bumping Node.js version to ${VERSION} in package.json"
         npm version $VERSION --no-git-tag-version
 
+    - name: Generate changelog with git-cliff
+      uses: orhun/git-cliff-action@v3
+      with:
+        config: cliff.toml
+        args: --latest --tag "v${{ steps.versioning.outputs.version }}"
+      env:
+        OUTPUT: CHANGELOG.md
+        GITHUB_REPO: ${{ github.repository }}
+
     - name: Commit version bump to main branch
       if: ${{ steps.detect.outputs.file-type == 'nodejs' }}
       shell: bash
