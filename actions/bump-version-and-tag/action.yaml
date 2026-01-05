@@ -142,7 +142,6 @@ runs:
         config: cliff.toml
         args: --prepend CHANGELOG.md --latest --tag "v${{ steps.versioning.outputs.version }}"
       env:
-        OUTPUT: CHANGELOG.md
         GITHUB_REPO: ${{ github.repository }}
 
     - name: Commit version bump to main branch
