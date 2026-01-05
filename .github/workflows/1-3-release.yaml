@@ -44,7 +44,7 @@ jobs:
     needs: [update-pr-label-test]
     runs-on: ubuntu-latest
     outputs:
-      continue: ${{ steps.version.outputs.continue }}
+      continue: ${{ steps.check-approval.outputs.continue }}
       tag: ${{ steps.version.outputs.tag }}
       version: ${{ steps.version.outputs.version }}
     steps:

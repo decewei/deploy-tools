@@ -140,7 +140,7 @@ runs:
       uses: orhun/git-cliff-action@v4
       with:
         config: cliff.toml
-        args: --latest --tag "v${{ steps.versioning.outputs.version }}"
+        args: --prepend CHANGELOG.md --latest --tag "v${{ steps.versioning.outputs.version }}"
       env:
         OUTPUT: CHANGELOG.md
         GITHUB_REPO: ${{ github.repository }}
