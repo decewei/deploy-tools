@@ -146,7 +146,6 @@ runs:
         GITHUB_REPO: ${{ github.repository }}
 
     - name: Commit version bump to main branch
-      if: ${{ steps.detect.outputs.file-type == 'nodejs' }}
       shell: bash
       run: |
         HEAD_SHA="${{ github.event.pull_request.head.sha || github.sha }}"
