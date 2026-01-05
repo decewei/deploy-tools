@@ -1,0 +1,9 @@
+## [0.1.5] - 2026-01-05
+
+### 🐛 Bug Fixes
+
+- Add OUTPUT env variable to version bump action (#29)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Bump version to 0.1.5 [skip ci]
