@@ -54,14 +54,27 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Bump version and tag with approval check
-        id: version
-        uses: decewei/deploy-tools/actions/bump-version-and-tag-with-approval@main
+      - name: Configure git authentication
+        id: auth
+        uses: decewei/deploy-tools/actions/configure-git-auth@main
         with:
           app-id: ${{ vars.ACTION_BOT_APP_ID }}
           private-key: ${{ secrets.ACTION_BOT_PRIVATE_KEY }}
+
+      - name: Check release approval
+        id: check-approval
+        uses: decewei/deploy-tools/actions/check-release-approval@main
+        with:
+          token: ${{ steps.auth.outputs.token }}
           pr-number: ${{ github.event.pull_request.number }}
           repo: ${{ github.repository }}
+
+      - name: Bump version and tag
+        id: bump
+        if: ${{ steps.check-approval.outputs.continue == 'true' }}
+        uses: decewei/deploy-tools/actions/bump-version-and-tag@main
+        with:
+          token: ${{ steps.auth.outputs.token }}
           tag-prefix: 'v'
           main-branch: 'main'
           release-branch: 'release'
