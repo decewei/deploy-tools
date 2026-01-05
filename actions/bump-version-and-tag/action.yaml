@@ -140,9 +140,9 @@ runs:
       uses: orhun/git-cliff-action@v4
       with:
         config: cliff.toml
-        args: --prepend CHANGELOG.md --latest --tag "v${{ steps.versioning.outputs.version }}"
+        args: --prepend CHANGELOG.md --latest --tag "v${{ steps.versioning.outputs.version }}" -o " "
       env:
-        OUTPUT: ""
+        OUTPUT: " "
         GITHUB_REPO: ${{ github.repository }}
 
     - name: Commit version bump to main branch
