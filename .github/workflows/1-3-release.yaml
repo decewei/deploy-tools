@@ -70,7 +70,7 @@ jobs:
           repo: ${{ github.repository }}
 
       - name: Bump version and tag
-        id: bump
+        id: version
         if: ${{ steps.check-approval.outputs.continue == 'true' }}
         uses: decewei/deploy-tools/actions/bump-version-and-tag@main
         with:
