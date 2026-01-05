@@ -1,3 +1,12 @@
+## [0.1.6] - 2026-01-05
+
+### 🐛 Bug Fixes
+
+- Update git-cliff action to include output option (#32)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Bump version to 0.1.6 [skip ci]
 ## [0.1.5] - 2026-01-05
 
 ### 🐛 Bug Fixes
