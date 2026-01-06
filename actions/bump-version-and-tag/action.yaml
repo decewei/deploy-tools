@@ -141,13 +141,35 @@ runs:
       run: |
         # Download and install git-cliff binary
         VERSION="2.6.1"
-        ARCH="x86_64-unknown-linux-gnu"
+        
+        # Detect architecture
+        MACHINE=$(uname -m)
+        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+        
+        case "${MACHINE}-${OS}" in
+          x86_64-linux)
+            ARCH="x86_64-unknown-linux-gnu"
+            ;;
+          aarch64-linux|arm64-linux)
+            ARCH="aarch64-unknown-linux-gnu"
+            ;;
+          x86_64-darwin)
+            ARCH="x86_64-apple-darwin"
+            ;;
+          arm64-darwin|aarch64-darwin)
+            ARCH="aarch64-apple-darwin"
+            ;;
+          *)
+            echo "Unsupported architecture: ${MACHINE}-${OS}"
+            exit 1
+            ;;
+        esac
+        
         TARBALL="git-cliff-${VERSION}-${ARCH}.tar.gz"
         
-        curl -sSL "https://github.com/orhun/git-cliff/releases/download/v${VERSION}/${TARBALL}" -o "/tmp/${TARBALL}"
+        curl -fsSL "https://github.com/orhun/git-cliff/releases/download/v${VERSION}/${TARBALL}" -o "/tmp/${TARBALL}"
         tar -xzf "/tmp/${TARBALL}" -C /tmp
         sudo mv "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/
-        chmod +x /usr/local/bin/git-cliff
         
         # Verify installation
         git-cliff --version
