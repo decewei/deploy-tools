@@ -146,8 +146,6 @@ runs:
       shell: bash
       run: |
         git-cliff --latest --tag "v${{ steps.versioning.outputs.version }}" --prepend CHANGELOG.md
-      env:
-        GITHUB_REPO: ${{ github.repository }}
 
     - name: Commit version bump to main branch
       shell: bash
