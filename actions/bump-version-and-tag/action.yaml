@@ -169,7 +169,13 @@ runs:
         
         curl -fsSL "https://github.com/orhun/git-cliff/releases/download/v${VERSION}/${TARBALL}" -o "/tmp/${TARBALL}"
         tar -xzf "/tmp/${TARBALL}" -C /tmp
-        sudo mv "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/
+        
+        # Install to /usr/local/bin (already in PATH on GitHub Actions runners)
+        if [ -w /usr/local/bin ]; then
+          mv "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/
+        else
+          sudo mv "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/
+        fi
         
         # Verify installation
         git-cliff --version
