@@ -136,13 +136,27 @@ runs:
         echo "Bumping Node.js version to ${VERSION} in package.json"
         npm version $VERSION --no-git-tag-version
 
+    - name: Install git-cliff
+      shell: bash
+      run: |
+        # Download and install git-cliff binary
+        VERSION="2.6.1"
+        ARCH="x86_64-unknown-linux-gnu"
+        TARBALL="git-cliff-${VERSION}-${ARCH}.tar.gz"
+        
+        curl -sSL "https://github.com/orhun/git-cliff/releases/download/v${VERSION}/${TARBALL}" -o "/tmp/${TARBALL}"
+        tar -xzf "/tmp/${TARBALL}" -C /tmp
+        sudo mv "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/
+        chmod +x /usr/local/bin/git-cliff
+        
+        # Verify installation
+        git-cliff --version
+
     - name: Generate changelog with git-cliff
-      uses: orhun/git-cliff-action@v4
-      with:
-        config: cliff.toml
-        args: --tag "v${{ steps.versioning.outputs.version }}"
+      shell: bash
+      run: |
+        git-cliff --config cliff.toml --tag "v${{ steps.versioning.outputs.version }}" --output CHANGELOG.md
       env:
-        OUTPUT: "CHANGELOG.md"
         GITHUB_REPO: ${{ github.repository }}
 
     - name: Commit version bump to main branch
