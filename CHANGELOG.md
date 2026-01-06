@@ -1,3 +1,17 @@
+## [0.1.8] - 2026-01-06
+
+### 🐛 Bug Fixes
+
+- CHANGELOG generation
+## [0.1.7] - 2026-01-05
+
+### 🐛 Bug Fixes
+
+- Set OUTPUT to an empty string in action.yaml
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Bump version to 0.1.7 [skip ci]
 ## [0.1.6] - 2026-01-05
 
 ### 🐛 Bug Fixes
@@ -54,3 +68,31 @@
 ### ⚙️ Miscellaneous Tasks
 
 - *(release)* Bump version to 0.1.1 [skip ci]
+## [0.1.0] - 2026-01-04
+
+### 🚀 Features
+
+- Add changelog to bump version and tag (#14)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Bump version to 0.1.0 [skip ci]
+## [0.0.2] - 2026-01-03
+
+### 🐛 Bug Fixes
+
+- Use existing repo (#6)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Bump version to 0.0.2 [skip ci]
+## [0.0.1] - 2026-01-03
+
+### 🐛 Bug Fixes
+
+- Package.json for test (#2)
+- Nodejs and change-path (#4)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Bump version to 0.0.1 [skip ci]
