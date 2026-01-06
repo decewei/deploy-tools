@@ -139,51 +139,13 @@ runs:
     - name: Install git-cliff
       shell: bash
       run: |
-        # Download and install git-cliff binary
-        VERSION="2.6.1"
-        
-        # Detect architecture
-        MACHINE=$(uname -m)
-        OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-        
-        case "${MACHINE}-${OS}" in
-          x86_64-linux)
-            ARCH="x86_64-unknown-linux-gnu"
-            ;;
-          aarch64-linux|arm64-linux)
-            ARCH="aarch64-unknown-linux-gnu"
-            ;;
-          x86_64-darwin)
-            ARCH="x86_64-apple-darwin"
-            ;;
-          arm64-darwin|aarch64-darwin)
-            ARCH="aarch64-apple-darwin"
-            ;;
-          *)
-            echo "Unsupported architecture: ${MACHINE}-${OS}"
-            exit 1
-            ;;
-        esac
-        
-        TARBALL="git-cliff-${VERSION}-${ARCH}.tar.gz"
-        
-        curl -fsSL "https://github.com/orhun/git-cliff/releases/download/v${VERSION}/${TARBALL}" -o "/tmp/${TARBALL}"
-        tar -xzf "/tmp/${TARBALL}" -C /tmp
-        
-        # Install to /usr/local/bin (already in PATH on GitHub Actions runners)
-        if [ -w /usr/local/bin ]; then
-          mv "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/
-        else
-          sudo mv "/tmp/git-cliff-${VERSION}/git-cliff" /usr/local/bin/
-        fi
-        
-        # Verify installation
+        pip install git-cliff
         git-cliff --version
 
     - name: Generate changelog with git-cliff
       shell: bash
       run: |
-        git-cliff --config cliff.toml --tag "v${{ steps.versioning.outputs.version }}" --output CHANGELOG.md
+        git-cliff --latest --tag "v${{ steps.versioning.outputs.version }}" --prepend CHANGELOG.md
       env:
         GITHUB_REPO: ${{ github.repository }}
 
