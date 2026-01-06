@@ -3,6 +3,15 @@
 ### 🐛 Bug Fixes
 
 - CHANGELOG generation
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Bump version to 0.1.8 [skip ci]
+## [0.1.8] - 2026-01-06
+
+### 🐛 Bug Fixes
+
+- CHANGELOG generation
 ## [0.1.7] - 2026-01-05
 
 ### 🐛 Bug Fixes
