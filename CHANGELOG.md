@@ -1,3 +1,8 @@
+## [0.1.10] - 2026-01-06
+
+### 🐛 Bug Fixes
+
+- Fix git-cliff to generate changelog for unreleased commits (#38)
 ## [0.1.8] - 2026-01-06
 
 ### 🐛 Bug Fixes
