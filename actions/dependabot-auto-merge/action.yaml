@@ -43,6 +43,30 @@ runs:
       env:
         GH_TOKEN: ${{ steps.auth.outputs.token }}
 
+    - name: Trim PR body if needed
+      if: ${{ contains(github.head_ref || github.ref_name, 'dependabot/') }}
+      shell: bash
+      run: |
+        PR_URL="${{ github.event.pull_request.html_url }}"
+        PR_NUMBER=$(echo "${PR_URL}" | grep -oE '[0-9]+$')
+        
+        # Get PR body
+        PR_BODY=$(gh pr view "${PR_NUMBER}" --json body --jq '.body' 2>/dev/null || echo "")
+        BODY_LENGTH=${#PR_BODY}
+        MAX_CHARS=60000
+        
+        if [ "${BODY_LENGTH}" -gt "${MAX_CHARS}" ]; then
+          echo "PR body exceeds ${MAX_CHARS} characters (${BODY_LENGTH} chars). Trimming..."
+          TRIMMED_BODY="${PR_BODY:0:${MAX_CHARS}}"
+          TRIMMED_BODY="${TRIMMED_BODY}... (PR body trimmed - original body exceeds character limit)"
+          gh pr edit "${PR_NUMBER}" --body "${TRIMMED_BODY}"
+          echo "PR body trimmed to ${MAX_CHARS} characters"
+        else
+          echo "PR body is within limits (${BODY_LENGTH} chars)"
+        fi
+      env:
+        GH_TOKEN: ${{ steps.auth.outputs.token }}
+
     - name: Enable auto-merge for dependabot PR
       if: ${{ contains(github.head_ref || github.ref_name, 'dependabot/') }}
       shell: bash
