@@ -1,3 +1,14 @@
+## [0.3.0] - 2026-01-28
+
+### 🚀 Features
+
+- Allow release-pr suffix to make it clearer what the PR is for (#44)
+
+### 🐛 Bug Fixes
+
+- Create no json issue (#45)
+- Yaml syntax in create-release-pr (#46)
+- Newline not showing in release pr (#48)
 ## [0.2.1] - 2026-01-28
 
 ### 🐛 Bug Fixes
