@@ -1,3 +1,8 @@
+## [0.2.1] - 2026-01-28
+
+### 🐛 Bug Fixes
+
+- Add missing repo name to PR length determination (#42)
 ## [0.2.0] - 2026-01-17
 
 ### 🚀 Features
