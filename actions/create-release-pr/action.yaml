@@ -27,6 +27,10 @@ inputs:
     required: false
     default: 'release:required-approval'
     description: 'Labels to apply to the release PR. Separate multiple labels with commas'
+  pr-body-suffix:
+    required: false
+    default: "This is a PR for release approval purpose. You only need to approve or reject, then close the PR without merging."
+    description: 'Text suffix to append to the created PR body (can include newlines).'
   close-label:
     required: false
     default: 'release:cancelled'
@@ -49,6 +53,7 @@ runs:
         SOURCE_BRANCH="${{ inputs.source-branch }}"
         TARGET_BRANCH="${{ inputs.target-branch }}"
         REVIEW_TEAM="${{ inputs.review-team }}"
+        PR_BODY_SUFFIX="${{ inputs.pr-body-suffix }}"
 
         SHORT_SHA=$(git rev-parse --short "origin/${SOURCE_BRANCH}")
         PR_TITLE="Release ${SOURCE_BRANCH}:${SHORT_SHA} into ${TARGET_BRANCH}"
@@ -82,8 +87,13 @@ runs:
           PR_CREATE_ARGS+=(--reviewer "${REVIEW_TEAM}")
         fi
         
-        gh pr create "${PR_CREATE_ARGS[@]}"
+        PR_NUMBER=$(gh pr create "${PR_CREATE_ARGS[@]}" --json number --jq '.number')
 
-        echo "Release PR created successfully"
+        echo "Release PR created successfully — PR #${PR_NUMBER}"
+
+        # Append PR body suffix and enforce 60000-byte limit
+        CURRENT_BODY=$(gh pr view "${PR_NUMBER}" --json body --jq '.body')
+        printf '%s' "$CURRENT_BODY" | gh pr edit "${PR_NUMBER}" --body -
+        echo "PR body updated for #${PR_NUMBER}."
       env:
         GH_TOKEN: ${{ steps.auth.outputs.token }}
