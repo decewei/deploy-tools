@@ -51,7 +51,7 @@ runs:
         PR_NUMBER=$(echo "${PR_URL}" | grep -oE '[0-9]+$')
         
         # Get PR body
-        PR_BODY=$(gh pr view "${PR_NUMBER}" --json body --jq '.body' 2>/dev/null || echo "")
+        PR_BODY=$(gh pr view "${PR_NUMBER}" --json body --jq '.body' --repo "${{ github.repository }}")
         BODY_LENGTH=${#PR_BODY}
         MAX_CHARS=60000
         
