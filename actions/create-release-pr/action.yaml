@@ -87,13 +87,17 @@ runs:
           PR_CREATE_ARGS+=(--reviewer "${REVIEW_TEAM}")
         fi
         
-        PR_NUMBER=$(gh pr create "${PR_CREATE_ARGS[@]}" --json number --jq '.number')
+        PR_URL=$(gh pr create "${PR_CREATE_ARGS[@]}")
+        PR_NUMBER="${PR_URL##*/}"
 
         echo "Release PR created successfully — PR #${PR_NUMBER}"
 
-        # Append PR body suffix and enforce 60000-byte limit
+        # Append PR body suffix
         CURRENT_BODY=$(gh pr view "${PR_NUMBER}" --json body --jq '.body')
-        printf '%s' "$CURRENT_BODY" | gh pr edit "${PR_NUMBER}" --body -
-        echo "PR body updated for #${PR_NUMBER}."
+        NEW_BODY="${CURRENT_BODY}
+
+${PR_BODY_SUFFIX}"
+        gh pr edit "${PR_NUMBER}" --body "$NEW_BODY"
+        echo "PR body updated for ${PR_NUMBER}."
       env:
         GH_TOKEN: ${{ steps.auth.outputs.token }}
