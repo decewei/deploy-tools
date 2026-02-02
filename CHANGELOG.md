@@ -1,3 +1,8 @@
+## [0.3.1] - 2026-02-02
+
+### 🐛 Bug Fixes
+
+- Add repository context to PR body edit command (#50)
 ## [0.3.0] - 2026-01-28
 
 ### 🚀 Features
