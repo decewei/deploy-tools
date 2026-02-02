@@ -59,7 +59,7 @@ runs:
           echo "PR body exceeds ${MAX_CHARS} characters (${BODY_LENGTH} chars). Trimming..."
           TRIMMED_BODY="${PR_BODY:0:${MAX_CHARS}}"
           TRIMMED_BODY="${TRIMMED_BODY}... (PR body trimmed - original body exceeds character limit)"
-          gh pr edit "${PR_NUMBER}" --body "${TRIMMED_BODY}"
+          gh pr edit "${PR_NUMBER}" --body "${TRIMMED_BODY}" --repo "${{ github.repository }}"
           echo "PR body trimmed to ${MAX_CHARS} characters"
         else
           echo "PR body is within limits (${BODY_LENGTH} chars)"
